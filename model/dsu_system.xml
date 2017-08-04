@@ -3,7 +3,7 @@
 <nta>
 	<declaration>// Place global declarations here.
 
-const int components = 4;
+const int components = 2;
 typedef int[0, components-1] id_t;
 
 broadcast chan  update, update_finished, update_performed, update_aborted, abort_update;
@@ -284,13 +284,13 @@ bool checkUpdating() {
 			<name x="-467" y="-153">UpdatePerformed</name>
 			<committed/>
 		</location>
-		<location id="id16" x="-85" y="-127">
-			<name x="-195" y="-153">PerformUpdate</name>
+		<location id="id16" x="-34" y="-127">
+			<name x="-144" y="-153">PerformUpdate</name>
 			<committed/>
 		</location>
-		<location id="id17" x="-85" y="0">
-			<name x="-229" y="-25">AwaitingComponents</name>
-			<label kind="exponentialrate" x="-102" y="8">1</label>
+		<location id="id17" x="-34" y="0">
+			<name x="-178" y="-25">AwaitingComponents</name>
+			<label kind="exponentialrate" x="-51" y="8">1</label>
 		</location>
 		<location id="id18" x="-340" y="0">
 			<name x="-382" y="-25">Idle</name>
@@ -308,8 +308,8 @@ bool checkUpdating() {
 		<transition>
 			<source ref="id17"/>
 			<target ref="id14"/>
-			<label kind="synchronisation" x="-263" y="102">cancel_update_P?</label>
-			<nail x="-85" y="102"/>
+			<label kind="synchronisation" x="-212" y="102">cancel_update_P?</label>
+			<nail x="-34" y="102"/>
 		</transition>
 		<transition>
 			<source ref="id15"/>
@@ -319,31 +319,31 @@ bool checkUpdating() {
 		<transition>
 			<source ref="id16"/>
 			<target ref="id15"/>
-			<label kind="assignment" x="-263" y="-119">indirection_table++</label>
+			<label kind="assignment" x="-212" y="-119">indirection_table++</label>
 		</transition>
 		<transition>
 			<source ref="id17"/>
 			<target ref="id16"/>
-			<label kind="guard" x="-76" y="-85">components_ready == components</label>
-			<label kind="assignment" x="-76" y="-68">components_ready = 0,
+			<label kind="guard" x="-25" y="-85">components_ready == components</label>
+			<label kind="assignment" x="-25" y="-68">components_ready = 0,
 isUpdating = false</label>
 		</transition>
 		<transition>
 			<source ref="id17"/>
 			<target ref="id17"/>
-			<label kind="select" x="85" y="0">c : id_t</label>
-			<label kind="synchronisation" x="85" y="17">component_ready[c]?</label>
-			<label kind="assignment" x="85" y="34">isUpdating = checkUpdating()</label>
-			<nail x="-25" y="51"/>
-			<nail x="76" y="51"/>
-			<nail x="76" y="0"/>
+			<label kind="select" x="136" y="0">c : id_t</label>
+			<label kind="synchronisation" x="136" y="17">component_ready[c]?</label>
+			<label kind="assignment" x="136" y="34">isUpdating = checkUpdating()</label>
+			<nail x="26" y="51"/>
+			<nail x="127" y="51"/>
+			<nail x="127" y="0"/>
 		</transition>
 		<transition>
 			<source ref="id18"/>
 			<target ref="id17"/>
-			<label kind="select" x="-272" y="8">c : id_t</label>
-			<label kind="synchronisation" x="-272" y="25">component_ready[c]?</label>
-			<label kind="assignment" x="-272" y="42">components_ready++</label>
+			<label kind="select" x="-221" y="8">c : id_t</label>
+			<label kind="synchronisation" x="-221" y="25">component_ready[c]?</label>
+			<label kind="assignment" x="-221" y="42">components_ready++</label>
 		</transition>
 	</template>
 	<template>
@@ -608,7 +608,7 @@ bool isDone(){
 		</location>
 		<location id="id31" x="-212" y="-314">
 			<name x="-246" y="-348">Start</name>
-			<committed/>
+			<label kind="exponentialrate" x="-222" y="-280">1</label>
 		</location>
 		<location id="id32" x="-59" y="-68">
 			<name x="-50" y="-93">UpdateAborted</name>
@@ -642,16 +642,6 @@ bool isDone(){
 			<label kind="synchronisation" x="8" y="-42">update_canceled?</label>
 		</transition>
 		<transition>
-			<source ref="id34"/>
-			<target ref="id34"/>
-			<label kind="select" x="-399" y="0">n : int[1,10]</label>
-			<label kind="guard" x="-399" y="17">updater != 6 &amp;&amp; !isDone()</label>
-			<label kind="assignment" x="-399" y="34">updater = n</label>
-			<nail x="-399" y="-144"/>
-			<nail x="-399" y="-9"/>
-			<nail x="-246" y="-9"/>
-		</transition>
-		<transition>
 			<source ref="id33"/>
 			<target ref="id33"/>
 			<label kind="select" x="178" y="51">c : id_t</label>
@@ -671,16 +661,14 @@ bool isDone(){
 		<transition>
 			<source ref="id34"/>
 			<target ref="id33"/>
-			<label kind="guard" x="-204" y="-25">updater == 6</label>
-			<label kind="synchronisation" x="-204" y="-8">update!</label>
-			<label kind="assignment" x="-204" y="9">updater = 0</label>
+			<label kind="synchronisation" x="-195" y="-42">update!</label>
 			<nail x="-212" y="34"/>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
 // List one or more processes to be composed into a system.
-system Manager, PassiveComponent, PassiveDSU, InterruptHandler;
-    </system>
+//system Manager, PassiveComponent, PassiveDSU, InterruptHandler;
+system Manager, ActiveComponent, ActiveDSU, InterruptHandler;</system>
 	<queries>
 		<query>
 			<formula>inf {Manager.UpdateDone} : Manager.totalTime
@@ -714,6 +702,12 @@ system Manager, PassiveComponent, PassiveDSU, InterruptHandler;
 		</query>
 		<query>
 			<formula>simulate 2000 [ &lt;= 1000] {PassiveDSU.AwaitingComponents, PassiveDSU.UpdateTime, PassiveComponent(0).Ready, PassiveComponent(0).AbortTime, PassiveComponent(0).DownTime, Manager.Done}
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>simulate 2000 [ &lt;= 1000] {Manager.Done}
 			</formula>
 			<comment>
 			</comment>
