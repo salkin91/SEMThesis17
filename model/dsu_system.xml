@@ -600,26 +600,26 @@ bool isDone(){
     return components_done == components;
 }</declaration>
 		<location id="id29" x="93" y="-306">
-			<name x="51" y="-340">Done</name>
+			<name x="34" y="-331">Done</name>
 		</location>
 		<location id="id30" x="93" y="-170">
-			<name x="0" y="-204">UpdateDone</name>
+			<name x="-8" y="-195">UpdateDone</name>
 			<committed/>
 		</location>
-		<location id="id31" x="-212" y="-314">
-			<name x="-246" y="-348">Start</name>
-			<label kind="exponentialrate" x="-222" y="-280">1</label>
+		<location id="id31" x="-212" y="-297">
+			<name x="-263" y="-323">Start</name>
+			<label kind="exponentialrate" x="-222" y="-263">1</label>
 		</location>
 		<location id="id32" x="-59" y="-68">
-			<name x="-50" y="-93">UpdateAborted</name>
+			<name x="-42" y="-93">UpdateAborted</name>
 			<committed/>
 		</location>
 		<location id="id33" x="93" y="34">
-			<name x="102" y="9">UpdatingAll</name>
+			<name x="110" y="8">UpdatingAll</name>
 			<label kind="exponentialrate" x="76" y="42">1</label>
 		</location>
 		<location id="id34" x="-212" y="-178">
-			<name x="-263" y="-204">Idle</name>
+			<name x="-255" y="-204">Idle</name>
 			<label kind="exponentialrate" x="-238" y="-170">1</label>
 		</location>
 		<init ref="id31"/>
@@ -639,7 +639,7 @@ bool isDone(){
 		<transition>
 			<source ref="id33"/>
 			<target ref="id32"/>
-			<label kind="synchronisation" x="8" y="-42">update_canceled?</label>
+			<label kind="synchronisation" x="-119" y="-25">update_canceled?</label>
 		</transition>
 		<transition>
 			<source ref="id33"/>
@@ -661,7 +661,7 @@ bool isDone(){
 		<transition>
 			<source ref="id34"/>
 			<target ref="id33"/>
-			<label kind="synchronisation" x="-195" y="-42">update!</label>
+			<label kind="synchronisation" x="-272" y="-68">update!</label>
 			<nail x="-212" y="34"/>
 		</transition>
 	</template>
