@@ -1,5 +1,5 @@
 import sys
-
+# Author Niklas le Comte
 #
 # This program copies and adds the id number of each simulation to
 # the values for that simulation for each simulated state.
