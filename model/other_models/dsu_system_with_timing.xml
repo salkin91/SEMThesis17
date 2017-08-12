@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+
+const int components = 2;
+typedef int[0, components-1] id_t;
+
+broadcast chan  update, update_finished, update_performed, update_aborted, timer_stop, update_done;
+chan perform_update[components], update_canceled[components], cancel_update[components], dsu_canceled[components];
+chan component_ready[components];
+chan update_single[components];
+
+
+
+int indirection_table = 0;
+
+bool isUpdating = false;
+
+</declaration>
+	<template>
+		<name>PassiveComponent</name>
+		<parameter>const id_t id</parameter>
+		<declaration>int activator = 0;
+int deactivator = 0;
+
+bool ready_sent = false;
+bool reference_found = false;
+
+clock timeout, safetyChecker, c;
+
+
+typedef struct {
+    bool update_done;
+    bool update_pending;
+} Component;
+
+Component comp;</declaration>
+		<location id="id0" x="-161" y="238">
+			<name x="-238" y="212">StopTimer</name>
+			<label kind="invariant" x="-144" y="238">c &lt;= 10</label>
+		</location>
+		<location id="id1" x="93" y="-152">
+			<name x="102" y="-178">CancelManager</name>
+			<committed/>
+		</location>
+		<location id="id2" x="93" y="-255">
+			<name x="110" y="-281">CancelDSU</name>
+			<committed/>
+		</location>
+		<location id="id3" x="-119" y="-161">
+			<name x="-162" y="-195">Ready</name>
+			<committed/>
+		</location>
+		<location id="id4" x="-612" y="-204">
+			<name x="-680" y="-238">Updated</name>
+			<committed/>
+		</location>
+		<location id="id5" x="799" y="-161">
+			<name x="808" y="-186">ReferenceFound</name>
+			<committed/>
+		</location>
+		<location id="id6" x="-119" y="-255">
+			<name x="-102" y="-271">Waiting</name>
+			<label kind="invariant" x="-221" y="-272">timeout &lt;= 20</label>
+		</location>
+		<location id="id7" x="451" y="34">
+			<name x="357" y="8">FunctionCall</name>
+			<label kind="invariant" x="391" y="-8">c &lt;= 5</label>
+		</location>
+		<location id="id8" x="-119" y="34">
+			<name x="-161" y="0">Idle</name>
+			<label kind="invariant" x="-263" y="17">safetyChecker &lt;= 20</label>
+		</location>
+		<location id="id9" x="-646" y="93">
+			<name x="-808" y="59">AwaitingConfirmation</name>
+		</location>
+		<init ref="id8"/>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="136" y="-59">safetyChecker == 20</label>
+			<label kind="assignment" x="136" y="-34">c := 0</label>
+			<nail x="102" y="-34"/>
+			<nail x="323" y="-34"/>
+			<nail x="425" y="-34"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-603" y="-42">update_done!</label>
+			<label kind="assignment" x="-501" y="246">c := 0</label>
+			<nail x="-612" y="238"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-416" y="-314">update_performed?</label>
+			<label kind="assignment" x="-416" y="-289">comp.update_done = true</label>
+			<nail x="-119" y="-289"/>
+			<nail x="-527" y="-289"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-255" y="119">c == 10</label>
+			<label kind="synchronisation" x="-255" y="136">timer_stop!</label>
+			<label kind="assignment" x="-255" y="153">c := 0,
+safetyChecker := 0</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="76" y="-119">update_canceled[id]!</label>
+			<label kind="assignment" x="76" y="-102">safetyChecker := 0</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="102" y="-229">dsu_canceled[id]?</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-331" y="68">update_aborted?</label>
+			<label kind="assignment" x="-416" y="85">comp.update_pending = false,
+c := 0</label>
+			<nail x="-204" y="59"/>
+			<nail x="-204" y="110"/>
+			<nail x="-153" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="552" y="-34">update_aborted?</label>
+			<label kind="assignment" x="552" y="-17">comp.update_pending = false,
+c := 0</label>
+			<nail x="493" y="-42"/>
+			<nail x="544" y="-42"/>
+			<nail x="544" y="8"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-110" y="-288">timeout == 20 &amp;&amp; !isUpdating</label>
+			<label kind="synchronisation" x="-68" y="-246">cancel_update[id]!</label>
+			<label kind="assignment" x="-59" y="-229">timeout := 0</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-263" y="-127">update_single[id]?</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-493" y="-110">comp.update_pending</label>
+			<label kind="assignment" x="-493" y="-93">comp.update_pending = false</label>
+			<nail x="-297" y="-51"/>
+			<nail x="-297" y="-153"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-272" y="-229">component_ready[id]!</label>
+			<label kind="assignment" x="-204" y="-212">timeout := 0</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id7"/>
+			<label kind="guard" x="808" y="-76">reference_found == true</label>
+			<label kind="assignment" x="808" y="-59">reference_found = false,
+c := 0</label>
+			<nail x="799" y="35"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id5"/>
+			<label kind="guard" x="544" y="-221">c == 5</label>
+			<label kind="assignment" x="544" y="-204">reference_found = true</label>
+			<nail x="450" y="-162"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="553" y="59">update_single[id]?</label>
+			<label kind="assignment" x="553" y="76">comp.update_pending = true,
+c := 0</label>
+			<nail x="493" y="110"/>
+			<nail x="544" y="110"/>
+			<nail x="544" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="306" y="59">update?</label>
+			<label kind="assignment" x="161" y="76">comp.update_pending = true,
+c := 0</label>
+			<nail x="366" y="59"/>
+			<nail x="366" y="110"/>
+			<nail x="417" y="110"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-17" y="-136">update?</label>
+			<nail x="-34" y="-77"/>
+			<nail x="-34" y="-161"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="guard" x="102" y="229">c &lt; 3</label>
+			<label kind="assignment" x="102" y="246">safetyChecker := 0,
+c := 0</label>
+			<nail x="451" y="220"/>
+			<nail x="-119" y="220"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="68" y="8">(c &gt;= 3 &amp;&amp; !comp.update_pending)</label>
+			<label kind="assignment" x="51" y="34">safetyChecker = 0,
+c := 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>PassiveDSU</name>
+		<declaration>int components_ready = 0;
+
+clock cl;
+
+int cancel_component = -1;
+
+bool checkUpdating() {
+    components_ready++;
+    return components_ready == components;
+}</declaration>
+		<location id="id10" x="-340" y="102">
+			<committed/>
+		</location>
+		<location id="id11" x="-340" y="-127">
+			<name x="-476" y="-153">UpdatePerformed</name>
+			<committed/>
+		</location>
+		<location id="id12" x="-85" y="-127">
+			<name x="-204" y="-153">PerformUpdate</name>
+			<committed/>
+		</location>
+		<location id="id13" x="-85" y="0">
+			<name x="-246" y="-25">AwaitingComponents</name>
+			<label kind="invariant" x="-314" y="-42">components_ready &lt;= components</label>
+		</location>
+		<location id="id14" x="-340" y="0">
+			<name x="-382" y="-25">Idle</name>
+		</location>
+		<init ref="id14"/>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id14"/>
+			<label kind="synchronisation" x="-578" y="34">dsu_canceled[cancel_component]!</label>
+			<label kind="assignment" x="-510" y="51">components_ready = 0,
+cancel_component = -1</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id10"/>
+			<label kind="select" x="-280" y="110">c : id_t</label>
+			<label kind="synchronisation" x="-280" y="127">cancel_update[c]?</label>
+			<label kind="assignment" x="-280" y="144">cancel_component = c</label>
+			<nail x="-85" y="102"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id14"/>
+			<label kind="synchronisation" x="-484" y="-76">update_performed!</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id11"/>
+			<label kind="assignment" x="-280" y="-119">indirection_table++</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-76" y="-85">components_ready == components</label>
+			<label kind="assignment" x="-76" y="-68">components_ready = 0,
+isUpdating = false</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id13"/>
+			<label kind="select" x="-25" y="59">c : id_t</label>
+			<label kind="synchronisation" x="-25" y="76">component_ready[c]?</label>
+			<label kind="assignment" x="-25" y="93">isUpdating = checkUpdating(),
+cl := 0</label>
+			<nail x="-25" y="51"/>
+			<nail x="76" y="51"/>
+			<nail x="76" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id13"/>
+			<label kind="select" x="-280" y="8">c : id_t</label>
+			<label kind="synchronisation" x="-280" y="25">component_ready[c]?</label>
+			<label kind="assignment" x="-280" y="42">components_ready++,
+cl := 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>ActiveComponent</name>
+		<parameter>const id_t id</parameter>
+		<declaration>int activator = false;
+int deactivator = false;
+int update_value = 0;
+
+clock safetyChecker;
+
+typedef struct {
+    bool update_done;
+    bool update_pending;
+} Component;
+Component comp;</declaration>
+		<location id="id15" x="-773" y="-306">
+			<name x="-909" y="-331">UpdatePerformed</name>
+			<committed/>
+		</location>
+		<location id="id16" x="-323" y="-306">
+			<name x="-442" y="-331">AwaitingUpdate</name>
+		</location>
+		<location id="id17" x="247" y="-43">
+			<name x="153" y="-69">FunctionCall</name>
+		</location>
+		<location id="id18" x="-323" y="-43">
+			<name x="-357" y="-34">Idle</name>
+			<label kind="invariant" x="-493" y="-68">safetyChecker &lt;= 20</label>
+		</location>
+		<location id="id19" x="-323" y="-230">
+			<name x="-450" y="-255">PrepareMessage</name>
+			<committed/>
+		</location>
+		<init ref="id18"/>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id18"/>
+			<label kind="synchronisation" x="-637" y="-34">update_done!</label>
+			<label kind="assignment" x="-637" y="-17">safetyChecker = 0</label>
+			<nail x="-773" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id15"/>
+			<label kind="synchronisation" x="-637" y="-297">perform_update[id]?</label>
+			<label kind="assignment" x="-637" y="-280">update_value++</label>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id16"/>
+			<label kind="synchronisation" x="-314" y="-272">component_ready[id]!</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id19"/>
+			<label kind="guard" x="-688" y="-153">comp.update_pending == true</label>
+			<label kind="assignment" x="-688" y="-136">comp.update_pending = false</label>
+			<nail x="-476" y="-102"/>
+			<nail x="-476" y="-170"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id17"/>
+			<label kind="select" x="382" y="-161">n : int[1,10]</label>
+			<label kind="guard" x="382" y="-144">deactivator != 5</label>
+			<label kind="assignment" x="381" y="-127">deactivator = n</label>
+			<nail x="289" y="-161"/>
+			<nail x="374" y="-161"/>
+			<nail x="374" y="-76"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id17"/>
+			<label kind="synchronisation" x="349" y="-18">update_single[id]?</label>
+			<label kind="assignment" x="349" y="-1">comp.update_pending = true</label>
+			<nail x="289" y="33"/>
+			<nail x="340" y="33"/>
+			<nail x="340" y="-18"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id17"/>
+			<label kind="synchronisation" x="102" y="-18">update?</label>
+			<label kind="assignment" x="-76" y="-1">comp.update_pending = true</label>
+			<nail x="162" y="-18"/>
+			<nail x="162" y="33"/>
+			<nail x="213" y="33"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id18"/>
+			<label kind="select" x="-229" y="-18">n : int[1,10]</label>
+			<label kind="guard" x="-229" y="-1">activator &gt; 8</label>
+			<label kind="assignment" x="-229" y="16">activator = n</label>
+			<nail x="-289" y="33"/>
+			<nail x="-238" y="33"/>
+			<nail x="-238" y="-18"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-238" y="-144">update?</label>
+			<nail x="-170" y="-102"/>
+			<nail x="-170" y="-170"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-459" y="-144">update_single[id]?</label>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id18"/>
+			<label kind="guard" x="-102" y="152">deactivator == 5</label>
+			<label kind="assignment" x="-102" y="169">deactivator = 0,
+safetyChecker = 0</label>
+			<nail x="247" y="143"/>
+			<nail x="-323" y="143"/>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-204" y="-85">(activator &lt; 8 &amp;&amp; !comp.update_pending) || safetyChecker == 20</label>
+			<label kind="assignment" x="-102" y="-69">activator = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>ActiveDSU</name>
+		<declaration>id_t queue[components+1];
+int[0, components] length;
+int component_updated = 0;
+
+void enqueue(id_t component) {
+    queue[length++] = component;
+}
+
+void dequeue() {
+    int i = 0;
+    length -= 1;
+    while(i &lt; length) {
+        queue[i] = queue[i+1];
+        i++;
+    }
+    queue[i] = 0;
+}
+
+id_t front() {
+    return queue[0];
+}
+
+bool isDone() {
+    return component_updated == components;
+}
+
+</declaration>
+		<location id="id20" x="-187" y="-17">
+		</location>
+		<location id="id21" x="-382" y="-17">
+			<name x="-416" y="-51">Idle</name>
+		</location>
+		<init ref="id21"/>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id20"/>
+			<label kind="select" x="-357" y="76">c : id_t</label>
+			<label kind="synchronisation" x="-357" y="93">component_ready[c]?</label>
+			<label kind="assignment" x="-357" y="110">enqueue(c)</label>
+			<nail x="-382" y="68"/>
+			<nail x="-187" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-103" y="-84">length &gt; 0</label>
+			<label kind="synchronisation" x="-102" y="-68">perform_update[front()]!</label>
+			<label kind="assignment" x="-102" y="-51">dequeue(), component_updated++</label>
+			<nail x="-110" y="-17"/>
+			<nail x="-110" y="-102"/>
+			<nail x="-153" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-314" y="-42">isDone()</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id20"/>
+			<label kind="select" x="-102" y="0">c : id_t</label>
+			<label kind="synchronisation" x="-102" y="17">component_ready[c]?</label>
+			<label kind="assignment" x="-102" y="34">enqueue(c)</label>
+			<nail x="-153" y="68"/>
+			<nail x="-110" y="68"/>
+			<nail x="-110" y="-17"/>
+		</transition>
+	</template>
+	<template>
+		<name>Manager</name>
+		<declaration>int updater = 0;
+
+int component_done = 0;
+
+bool isDone(){
+    return component_done == components;
+}
+
+clock totalTime;
+clock z;</declaration>
+		<location id="id22" x="93" y="-85">
+			<committed/>
+		</location>
+		<location id="id23" x="263" y="-170">
+			<name x="253" y="-204">Done</name>
+		</location>
+		<location id="id24" x="93" y="-170">
+			<name x="83" y="-204">UpdateDone</name>
+		</location>
+		<location id="id25" x="-365" y="-297">
+			<label kind="invariant" x="-484" y="-297">totalTime' == 0</label>
+			<committed/>
+		</location>
+		<location id="id26" x="-59" y="-68">
+			<name x="-50" y="-93">UpdateAborted</name>
+			<committed/>
+		</location>
+		<location id="id27" x="-76" y="-357">
+			<name x="-67" y="-382">UpdateSingle</name>
+		</location>
+		<location id="id28" x="93" y="34">
+			<name x="102" y="9">UpdatingAll</name>
+		</location>
+		<location id="id29" x="-212" y="-178">
+			<name x="-263" y="-204">Idle</name>
+			<label kind="invariant" x="-272" y="-195">z &lt;= 5</label>
+		</location>
+		<init ref="id25"/>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id29"/>
+			<label kind="guard" x="-416" y="-51">z == 5</label>
+			<label kind="assignment" x="-415" y="-38">z := 0</label>
+			<nail x="-331" y="34"/>
+			<nail x="-416" y="-110"/>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id24"/>
+			<label kind="synchronisation" x="-17" y="-127">update_finished!</label>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id25"/>
+			<label kind="synchronisation" x="-187" y="-510">timer_stop?</label>
+			<nail x="93" y="-467"/>
+			<nail x="-365" y="-467"/>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id29"/>
+			<label kind="assignment" x="-374" y="-238">totalTime := 0,
+z := 0</label>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id29"/>
+			<label kind="synchronisation" x="-136" y="-144">update_aborted!</label>
+			<label kind="assignment" x="-110" y="-127">z := 0</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id26"/>
+			<label kind="select" x="-102" y="-34">c : id_t</label>
+			<label kind="synchronisation" x="-102" y="-17">update_canceled[c]?</label>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id29"/>
+			<label kind="select" x="-60" y="-289">c : id_t</label>
+			<label kind="synchronisation" x="-59" y="-272">update_done?</label>
+			<nail x="-76" y="-178"/>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id27"/>
+			<label kind="select" x="-204" y="-306">c : id_t</label>
+			<label kind="guard" x="-204" y="-289">updater &lt; 0</label>
+			<label kind="synchronisation" x="-204" y="-272">update_single[c]!</label>
+			<label kind="assignment" x="-204" y="-255">updater = 0</label>
+			<nail x="-212" y="-357"/>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id22"/>
+			<label kind="synchronisation" x="102" y="-51">update_done?</label>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id28"/>
+			<label kind="guard" x="-204" y="-8">z &lt;= 3</label>
+			<label kind="synchronisation" x="-204" y="8">update!</label>
+			<label kind="assignment" x="-204" y="42">z = 0</label>
+			<nail x="-212" y="34"/>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+// List one or more processes to be composed into a system.
+system Manager, PassiveComponent, PassiveDSU;
+    </system>
+	<queries>
+		<query>
+			<formula>sup{PassiveDSU.AwaitingComponents} : PassiveDSU.cl
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>inf {Manager.UpdateDone} : Manager.totalTime
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup{Manager.Idle} : Manager.z
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup : Manager.totalTime
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup {PassiveComponent(0).StopTimer} : PassiveComponent(0).c
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup{Manager.UpdatingAll} : Manager.totalTime
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup{PassiveComponent(0).FunctionCall} : PassiveComponent(0).c
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>sup{Manager.UpdateDone} : Manager.totalTime
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; PassiveComponent(0).Updated &amp;&amp;  PassiveComponent(1).Updated
+			</formula>
+			<comment>
+			</comment>
+		</query>
+		<query>
+			<formula>A[] not deadlock
+			</formula>
+			<comment>
+			</comment>
+		</query>
+	</queries>
+</nta>
